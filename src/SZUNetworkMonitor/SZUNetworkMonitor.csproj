@@ -8,9 +8,14 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>SZUNetworkMonitor</AssemblyName>
     <RootNamespace>SZUNetworkMonitor</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>SZUNetworkMonitor.Tests</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 </Project>

@@ -1,22 +1,29 @@
-## &#x4E2D;&#x6587;&#x4F7F;&#x7528;
+## v1.0.2
 
-&#x666E;&#x901A;&#x7528;&#x6237;&#x8BF7;&#x4E0B;&#x8F7D; `SZUNetworkMonitor-Setup.exe` &#x5E76;&#x76F4;&#x63A5;&#x8FD0;&#x884C;&#x3002;&#x5B89;&#x88C5;&#x540E;&#x8F93;&#x5165;&#x6821;&#x56ED;&#x7F51;&#x8D26;&#x53F7;&#x548C;&#x5BC6;&#x7801;&#xFF0C;&#x4FDD;&#x6301;&#x5F00;&#x673A;&#x81EA;&#x542F;&#x5F00;&#x542F;&#x5373;&#x53EF;&#x3002;
+### 动态 SRun 门户认证
 
-- &#x6BCF; 1 &#x5206;&#x949F;&#x68C0;&#x6D4B;&#x4E00;&#x6B21;&#x5916;&#x7F51;&#xFF1B;
-- &#x6BCF;&#x6B21;&#x6700;&#x591A;&#x53D1;&#x9001; 5 &#x4E2A; Ping &#x5305;&#xFF1B;
-- &#x4EFB;&#x610F;&#x4E22;&#x5305;&#x4F1A;&#x7ACB;&#x5373;&#x91CD;&#x8FDE;&#x6821;&#x56ED;&#x7F51;&#xFF1B;
-- &#x8D26;&#x53F7;&#x5BC6;&#x7801;&#x4F7F;&#x7528; Windows DPAPI &#x52A0;&#x5BC6;&#x4FDD;&#x5B58;&#xFF1B;
-- &#x65E0;&#x9700;&#x4FEE;&#x6539; `hosts` &#x6587;&#x4EF6;&#xFF0C;&#x65E0;&#x9700;&#x7BA1;&#x7406;&#x5458;&#x6743;&#x9650;&#x3002;
+- 断网后使用不跟随重定向的 HTTP 探测读取 captive portal 的 30x `Location`。
+- 动态解析门户主机、`ac_id`、`ac-ip` / `ac_ip`、SSID 和客户端 IP，不再默认连接旧教学区认证地址，也不再固定 `ac_id`。
+- `ac_id` 现已贯穿 challenge、用户信息、校验和和登录请求。
+- HTTPS 仍使用门户主机的 `Host`、SNI 和证书校验；TCP 优先直连本次发现到的 AC 地址。直连失败会给出明确提示，绝不静默回退到旧地址。
+- 仅支持显式提供且完整的最后兜底参数；没有内置的环境特定认证默认值。
 
-## Downloads
+### 稳定性与隐私
 
-| File | Recommended for | Notes |
+- 同一 Windows 用户只允许运行一个托盘实例；日志每行写入 PID。
+- 检查周期固定为 60 秒，每轮最多 Ping 5 次，第一包失败才触发一次重连。
+- 认证失败后有 60 秒冷却；计时器、认证任务和退出流程均已串行化与可取消，避免重复重连。
+- 托盘状态增加“正在发现门户”“正在检测”“正在重连”“重连成功/失败”等提示。
+- 日志与失败信息会隐藏 MAC、账号、密码和 IP 地址。
+
+### 测试
+
+- 新增门户重定向解析测试，覆盖 `ac-ip`、`ac_ip` 以及不同 `ac_id`。
+- 新增 GUI 单元测试，覆盖单实例 Mutex 和认证失败后的 60 秒冷却。
+
+## 下载内容
+
+| 文件 | 适用人群 | 说明 |
 | --- | --- | --- |
-| `SZUNetworkMonitor-Setup.exe` | Most users | Installs the app and Start-menu shortcut. |
-| `SZUNetworkMonitor-portable-win-x64.zip` | Advanced users | Extract, keep both `.exe` files together, then run `SZUNetworkMonitor.exe`. |
-
-## Notes
-
-- This release supports the SZU teaching-area SRun endpoint only. It does not support dormitory ePortal networking.
-- If reconnecting fails, open the tray-menu log and report only sanitized error details.
-- This project is AGPL-3.0-or-later. Source and attribution are included in the repository.
+| `SZUNetworkMonitor-Setup.exe` | 大多数用户 | 安装程序和开始菜单快捷方式。 |
+| `SZUNetworkMonitor-portable-win-x64.zip` | 高级用户 | 解压后保持两个 `.exe` 文件在同一目录再运行。 |

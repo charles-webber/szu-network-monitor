@@ -1,5 +1,5 @@
 #define AppName "SZU Campus Network Monitor"
-#define AppVersion "1.0.1"
+#define AppVersion "1.0.2"
 #define AppPublisher "SZU Network Monitor contributors"
 #define AppExeName "SZUNetworkMonitor.exe"
 

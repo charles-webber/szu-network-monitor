@@ -29,6 +29,9 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --no-progress --yes
 
+      - name: Test GUI scheduling and single-instance safeguards
+        run: dotnet test .\src\SZUNetworkMonitor.Tests\SZUNetworkMonitor.Tests.csproj --configuration Release
+
       - name: Build portable app and installer
         shell: pwsh
         run: .\build.ps1 -Configuration Release

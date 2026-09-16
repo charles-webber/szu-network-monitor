@@ -21,6 +21,11 @@ func main() {
 	username := flag.String("username", "", "campus network username")
 	passwordFromStdin := flag.Bool("password-stdin", false, "read password from standard input")
 	jsonOutput := flag.Bool("json", false, "write a JSON result to standard output")
+	probeURL := flag.String("probe-url", "", "optional HTTP captive-portal probe URL")
+	fallbackHost := flag.String("fallback-host", "", "explicit fallback portal host (used only if discovery fails)")
+	fallbackACID := flag.String("fallback-ac-id", "", "explicit fallback ac_id (used only if discovery fails)")
+	fallbackACIP := flag.String("fallback-ac-ip", "", "explicit fallback AC IP (used only if discovery fails)")
+	fallbackClientIP := flag.String("fallback-client-ip", "", "explicit fallback client IP (used only if discovery fails)")
 	flag.Parse()
 
 	if strings.TrimSpace(*username) == "" || !*passwordFromStdin {
@@ -30,7 +35,7 @@ func main() {
 
 	passwordBytes, err := io.ReadAll(os.Stdin)
 	if err != nil {
-		writeResult(*jsonOutput, output{Success: false, Message: "Unable to read password input.", Error: err.Error()})
+		writeResult(*jsonOutput, output{Success: false, Message: "Unable to read password input.", Error: "Unable to read password input."})
 		os.Exit(2)
 	}
 	password := strings.TrimSuffix(strings.TrimSuffix(string(passwordBytes), "\n"), "\r")
@@ -39,7 +44,25 @@ func main() {
 		os.Exit(2)
 	}
 
-	result, err := srun.NewClient().Login(strings.TrimSpace(*username), password)
+	options := srun.ClientOptions{}
+	if strings.TrimSpace(*probeURL) != "" {
+		options.ProbeURLs = []string{strings.TrimSpace(*probeURL)}
+	}
+	fallbackValues := []string{*fallbackHost, *fallbackACID, *fallbackACIP, *fallbackClientIP}
+	hasFallbackValue := false
+	for _, value := range fallbackValues {
+		hasFallbackValue = hasFallbackValue || strings.TrimSpace(value) != ""
+	}
+	if hasFallbackValue {
+		fallback, fallbackErr := srun.NewFallbackPortal(*fallbackHost, *fallbackACID, *fallbackACIP, *fallbackClientIP)
+		if fallbackErr != nil {
+			writeResult(*jsonOutput, output{Success: false, Message: "Invalid fallback portal configuration.", Error: "All fallback portal values must be valid and explicitly supplied."})
+			os.Exit(2)
+		}
+		options.Fallback = &fallback
+	}
+
+	result, err := srun.NewClient(options).Login(strings.TrimSpace(*username), password)
 	if err != nil {
 		writeResult(*jsonOutput, output{Success: false, Message: "Campus login failed.", Error: err.Error()})
 		os.Exit(1)
