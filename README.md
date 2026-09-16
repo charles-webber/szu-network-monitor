@@ -4,6 +4,14 @@
 
 It checks the public network every minute. Each check sends up to five pings to `www.baidu.com`; when the first ping is lost, the app immediately tries to sign in to the campus network again.
 
+## &#x4E2D;&#x6587;&#x8BF4;&#x660E;
+
+1. &#x4E0B;&#x8F7D; [Releases](../../releases) &#x9875;&#x9762;&#x7684; `SZUNetworkMonitor-Setup.exe` &#x5E76;&#x5B89;&#x88C5;&#x3002;
+2. &#x9996;&#x6B21;&#x8FD0;&#x884C;&#x65F6;&#xFF0C;&#x8F93;&#x5165;&#x6821;&#x56ED;&#x7F51;&#x8D26;&#x53F7;&#x548C;&#x5BC6;&#x7801;&#x3002;
+3. &#x7A0B;&#x5E8F;&#x5728;&#x53F3;&#x4E0B;&#x89D2;&#x7CFB;&#x7EDF;&#x6258;&#x76D8;&#x8FD0;&#x884C;&#xFF1A;&#x6BCF;&#x5206;&#x949F;&#x68C0;&#x6D4B;&#x4E00;&#x6B21;&#x7F51;&#x7EDC;&#xFF0C;&#x6700;&#x591A;&#x53D1;&#x9001; 5 &#x4E2A; Ping &#x5305;&#x3002;&#x4EFB;&#x610F;&#x4E00;&#x4E2A;&#x4E22;&#x5305;&#x4F1A;&#x7ACB;&#x5373;&#x91CD;&#x8FDE;&#x6821;&#x56ED;&#x7F51;&#x3002;
+4. &#x53F3;&#x952E;&#x6258;&#x76D8;&#x56FE;&#x6807;&#x53EF;&#x4EE5;&#x7ACB;&#x5373;&#x68C0;&#x67E5;&#x3001;&#x4FEE;&#x6539;&#x8D26;&#x53F7;&#x5BC6;&#x7801;&#x3001;&#x5F00;&#x5173;&#x5F00;&#x673A;&#x81EA;&#x542F;&#x3001;&#x6253;&#x5F00;&#x65E5;&#x5FD7;&#x6216;&#x9000;&#x51FA;&#x3002;
+5. &#x5BC6;&#x7801;&#x4EC5;&#x4FDD;&#x5B58;&#x5728;&#x672C;&#x673A;&#xFF0C;&#x4F7F;&#x7528; Windows DPAPI &#x4E3A;&#x5F53;&#x524D;&#x7528;&#x6237;&#x52A0;&#x5BC6;&#x3002;
+
 ## Download and use
 
 For most people, **do not clone this repository and do not run PowerShell commands**.
