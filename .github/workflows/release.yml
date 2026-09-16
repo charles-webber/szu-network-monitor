@@ -1,0 +1,55 @@
+name: Build Windows release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.x"
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress --yes
+
+      - name: Build portable app and installer
+        shell: pwsh
+        run: .\build.ps1 -Configuration Release
+
+      - name: Create portable zip
+        shell: pwsh
+        run: Compress-Archive -Path .\artifacts\publish\* -DestinationPath .\artifacts\SZUNetworkMonitor-portable-win-x64.zip -Force
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SZUNetworkMonitor-win-x64
+          path: |
+            artifacts\SZUNetworkMonitor-Setup.exe
+            artifacts\SZUNetworkMonitor-portable-win-x64.zip
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/SZUNetworkMonitor-Setup.exe
+            artifacts/SZUNetworkMonitor-portable-win-x64.zip

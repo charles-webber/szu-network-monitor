@@ -1,0 +1,30 @@
+using Microsoft.Win32;
+
+namespace SZUNetworkMonitor;
+
+internal static class StartupManager
+{
+    private const string RunKey = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+    private const string ValueName = "SZUNetworkMonitor";
+
+    public static bool IsEnabled()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: false);
+        return key?.GetValue(ValueName) is string value && !string.IsNullOrWhiteSpace(value);
+    }
+
+    public static void SetEnabled(bool enabled)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(RunKey, writable: true)
+            ?? throw new InvalidOperationException("Unable to access the current-user startup registry key.");
+
+        if (enabled)
+        {
+            key.SetValue(ValueName, $"\"{Application.ExecutablePath}\" --background", RegistryValueKind.String);
+        }
+        else
+        {
+            key.DeleteValue(ValueName, throwOnMissingValue: false);
+        }
+    }
+}
