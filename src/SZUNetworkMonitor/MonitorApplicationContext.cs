@@ -16,6 +16,7 @@ internal sealed class MonitorApplicationContext : ApplicationContext
     private readonly ToolStripMenuItem _startupMenuItem;
     private readonly System.Windows.Forms.Timer _pollTimer;
     private readonly CancellationTokenSource _shutdownCancellation = new();
+    private readonly ConnectivityCheckGate _connectivityCheckGate = new(TimeProvider.System, TimeSpan.FromMilliseconds(PollIntervalMilliseconds));
     private readonly AuthenticationAttemptGate _authenticationGate = new(TimeProvider.System, TimeSpan.FromMinutes(1));
     private AppSettings? _settings;
     private SetupForm? _settingsForm;
@@ -85,8 +86,21 @@ internal sealed class MonitorApplicationContext : ApplicationContext
             return;
         }
 
+        var checkState = _connectivityCheckGate.TryBegin(out var remainingInterval);
+        if (checkState == ConnectivityCheckState.AlreadyRunning)
+        {
+            return;
+        }
+        if (checkState == ConnectivityCheckState.WaitingForNextInterval)
+        {
+            var seconds = Math.Max(1, (int)Math.Ceiling(remainingInterval.TotalSeconds));
+            UpdateStatus($"网络正常：{seconds} 秒后再次检查", ToolTipIcon.Info);
+            return;
+        }
+
         // There is exactly one timer and one queued monitor task. The timer is
-        // restarted only after that task completes, so ticks cannot overlap.
+        // restarted only after that task completes. The gate also coalesces
+        // manual tray requests until a full 60-second interval has elapsed.
         _pollTimer.Stop();
         _activeCheck = RunCheckAsync(_shutdownCancellation.Token);
     }
@@ -94,14 +108,14 @@ internal sealed class MonitorApplicationContext : ApplicationContext
     private async Task RunCheckAsync(CancellationToken cancellationToken)
     {
         var settings = _settings;
-        if (settings?.IsConfigured != true)
-        {
-            return;
-        }
-
-        var pingCount = Math.Clamp(settings.PingCount, 1, MaximumPingCount);
         try
         {
+            if (settings?.IsConfigured != true)
+            {
+                return;
+            }
+
+            var pingCount = Math.Clamp(settings.PingCount, 1, MaximumPingCount);
             var successfulPings = 0;
             using var pinger = new Ping();
             for (var attempt = 1; attempt <= pingCount; attempt++)
@@ -145,6 +159,7 @@ internal sealed class MonitorApplicationContext : ApplicationContext
         }
         finally
         {
+            _connectivityCheckGate.Complete();
             if (!_isExiting && _monitoringStarted && _settings?.IsConfigured == true)
             {
                 _pollTimer.Start();

@@ -26,6 +26,10 @@ jobs:
         with:
           go-version: "1.22.x"
 
+      - name: Test SRun helper and local captive-portal simulation
+        working-directory: src/SzuLoginHelper
+        run: go test ./...
+
       - name: Install Inno Setup
         run: choco install innosetup --no-progress --yes
 

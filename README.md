@@ -35,7 +35,7 @@ Windows 托盘程序：每分钟检查一次网络；首次 Ping 失败时自动
 | `重连失败：…` | 显示已脱敏的可读原因；可从托盘菜单打开日志进一步查看。 |
 | `认证冷却中：…` | 上一次认证失败后，60 秒冷却期尚未结束。 |
 
-同一 Windows 用户只能运行一个实例。日志中的每一行带有 PID，便于确认是否存在重复进程。程序使用一个可取消的计时器和一个串行认证闸门：认证失败后至少 60 秒才会再次尝试，退出时会停止计时器并取消正在进行的认证助手。
+同一 Windows 用户只能运行一个实例。日志中的每一行带有 PID，便于确认是否存在重复进程。程序使用一个可取消的计时器、检查节流和串行认证闸门：每次检查结束后至少 60 秒才会开始下一轮；认证失败后至少 60 秒才会再次尝试，退出时会停止计时器并取消正在进行的认证助手。
 
 ## 安全与隐私
 
@@ -65,12 +65,14 @@ cd ..\..
 
 The build creates `artifacts\publish\` and, when Inno Setup is available, `artifacts\SZUNetworkMonitor-Setup.exe`.
 
+测试会在本机启动一个临时 HTTP 服务，模拟 captive portal 返回的 302 `Location`；它不会断开当前网络，也不会向真实校园网提交认证。该测试会验证 `ac-ip` / `ac_ip`、不同 `ac_id`，以及这些动态参数在 challenge、用户信息、校验和和登录请求中的完整传递。
+
 ## Release process
 
 GitHub Actions builds and publishes the installer and portable zip for a version tag.
 
 ```powershell
-git tag v1.0.2
+git tag v1.0.3
 git push origin main --tags
 ```
 

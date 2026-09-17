@@ -208,7 +208,12 @@ func (c *Client) probePortal(ctx context.Context, probeURL string) (PortalParame
 }
 
 func (c *Client) loginWithPortal(ctx context.Context, portal PortalParameters, username, password string) (LoginResult, error) {
-	httpClient := newPortalHTTPClient(portal)
+	return loginWithHTTPClient(ctx, newPortalHTTPClient(portal), portal, username, password)
+}
+
+// loginWithHTTPClient contains the SRun protocol flow separately from socket
+// setup so the complete discovered-parameter flow can be tested locally.
+func loginWithHTTPClient(ctx context.Context, httpClient *http.Client, portal PortalParameters, username, password string) (LoginResult, error) {
 
 	challenge, err := getChallenge(ctx, httpClient, portal, username)
 	if err != nil {
