@@ -24,6 +24,8 @@ Windows 托盘程序：每分钟检查一次网络；首次 Ping 失败时自动
 
 如果 HTTP 探测因特殊网络环境无法得到 30x 跳转，登录助手只支持显式的最后兜底：必须同时传入 `--fallback-host`、`--fallback-ac-id`、`--fallback-ac-ip` 和 `--fallback-client-ip`。这些参数没有内置默认值，GUI 默认不会启用它们。
 
+部分 Windows 代理或 TUN 网络会把认证服务器解析为 `198.18.0.0/15` 的 Fake-IP，或对白名单检测页返回普通响应。这种情况下，程序会改用活动的无线/有线物理网卡：从该网卡读取 IPv4 和 DNS，绑定该源地址直连解析 `net.szu.edu.cn`，并保持 `Host`、TLS SNI 与证书校验。它会从 SRun 门户页面动态读取 `ac_id` 和可用的 `ac-ip`，并由 challenge 返回当前客户端 IP；没有任何固定的教学区 IP 或 `ac_id` 回退。
+
 ## 托盘状态
 
 | 状态 | 含义 |
@@ -72,7 +74,7 @@ The build creates `artifacts\publish\` and, when Inno Setup is available, `artif
 GitHub Actions builds and publishes the installer and portable zip for a version tag.
 
 ```powershell
-git tag v1.0.3
+git tag v1.0.4
 git push origin main --tags
 ```
 

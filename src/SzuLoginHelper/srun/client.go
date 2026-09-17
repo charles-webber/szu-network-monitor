@@ -47,6 +47,8 @@ type Client struct {
 	probeURLs       []string
 	fallback        *PortalParameters
 	discoveryClient *http.Client
+	directRoute     *directRoute
+	directRouteErr  error
 }
 
 func NewClient(options ...ClientOptions) *Client {
@@ -74,9 +76,13 @@ func NewClient(options ...ClientOptions) *Client {
 		fallback = &copy
 	}
 
+	directRoute, directRouteErr := directRouteFromEnvironment()
+
 	return &Client{
-		probeURLs: probeURLs,
-		fallback:  fallback,
+		probeURLs:      probeURLs,
+		fallback:       fallback,
+		directRoute:    directRoute,
+		directRouteErr: directRouteErr,
 		discoveryClient: &http.Client{
 			Transport: &http.Transport{
 				Proxy:                 nil,
@@ -167,10 +173,22 @@ func (c *Client) Login(username, password string) (LoginResult, error) {
 
 func (c *Client) LoginContext(ctx context.Context, username, password string) (LoginResult, error) {
 	portal, err := c.discoverPortal(ctx)
-	if err != nil {
+	if err == nil {
+		return c.loginWithPortal(ctx, portal, username, password)
+	}
+
+	if c.directRoute == nil {
+		if c.directRouteErr != nil {
+			return LoginResult{}, fmt.Errorf("%w; direct SRun setup failed: %v", err, c.directRouteErr)
+		}
 		return LoginResult{}, err
 	}
-	return c.loginWithPortal(ctx, portal, username, password)
+
+	directPortal, directError := c.directRoute.discoverPortal(ctx)
+	if directError != nil {
+		return LoginResult{}, fmt.Errorf("%w; direct SRun discovery failed: %v", err, directError)
+	}
+	return loginWithHTTPClient(ctx, newPortalHTTPClientForSource(directPortal, c.directRoute.sourceIP), directPortal, username, password)
 }
 
 func (c *Client) discoverPortal(ctx context.Context) (PortalParameters, error) {
@@ -215,9 +233,16 @@ func (c *Client) loginWithPortal(ctx context.Context, portal PortalParameters, u
 // setup so the complete discovered-parameter flow can be tested locally.
 func loginWithHTTPClient(ctx context.Context, httpClient *http.Client, portal PortalParameters, username, password string) (LoginResult, error) {
 
-	challenge, err := getChallenge(ctx, httpClient, portal, username)
+	challengeResponse, err := getChallenge(ctx, httpClient, portal, username)
 	if err != nil {
 		return LoginResult{}, fmt.Errorf("get login challenge: %w", err)
+	}
+	challenge := challengeResponse.Challenge
+	if challengeResponse.ClientIP != "" {
+		portal.ClientIP = challengeResponse.ClientIP
+	}
+	if net.ParseIP(portal.ClientIP) == nil {
+		return LoginResult{}, errors.New("SRun challenge did not provide a valid client address")
 	}
 
 	encryptedPassword := encryptPassword(challenge, password)
@@ -262,7 +287,14 @@ func loginWithHTTPClient(ctx context.Context, httpClient *http.Client, portal Po
 }
 
 func newPortalHTTPClient(portal PortalParameters) *http.Client {
+	return newPortalHTTPClientForSource(portal, nil)
+}
+
+func newPortalHTTPClientForSource(portal PortalParameters, sourceIP net.IP) *http.Client {
 	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	if sourceIP != nil {
+		dialer.LocalAddr = &net.TCPAddr{IP: sourceIP}
+	}
 	return &http.Client{
 		Transport: &http.Transport{
 			Proxy: nil,
@@ -284,7 +316,12 @@ func newPortalHTTPClient(portal PortalParameters) *http.Client {
 	}
 }
 
-func getChallenge(ctx context.Context, httpClient *http.Client, portal PortalParameters, username string) (string, error) {
+type challengeResponse struct {
+	Challenge string
+	ClientIP  string
+}
+
+func getChallenge(ctx context.Context, httpClient *http.Client, portal PortalParameters, username string) (challengeResponse, error) {
 	parameters := url.Values{}
 	parameters.Set("username", username)
 	parameters.Set("ip", portal.ClientIP)
@@ -292,22 +329,23 @@ func getChallenge(ctx context.Context, httpClient *http.Client, portal PortalPar
 	parameters.Set("callback", callback)
 	body, err := get(ctx, httpClient, portal.endpoint("/cgi-bin/get_challenge", parameters))
 	if err != nil {
-		return "", err
+		return challengeResponse{}, err
 	}
 	var response struct {
 		Challenge string `json:"challenge"`
 		Error     string `json:"error"`
+		ClientIP  string `json:"client_ip"`
 	}
 	if err := json.Unmarshal(callbackPayload(body), &response); err != nil {
-		return "", errors.New("portal returned an unreadable challenge response")
+		return challengeResponse{}, errors.New("portal returned an unreadable challenge response")
 	}
 	if response.Error != "ok" {
-		return "", errors.New("portal rejected the challenge request")
+		return challengeResponse{}, errors.New("portal rejected the challenge request")
 	}
 	if response.Challenge == "" {
-		return "", errors.New("portal returned an empty challenge")
+		return challengeResponse{}, errors.New("portal returned an empty challenge")
 	}
-	return response.Challenge, nil
+	return challengeResponse{Challenge: response.Challenge, ClientIP: response.ClientIP}, nil
 }
 
 func get(ctx context.Context, httpClient *http.Client, requestURL string) ([]byte, error) {

@@ -102,7 +102,7 @@ func TestGetChallengeUsesDiscoveredACID(t *testing.T) {
 			StatusCode: http.StatusOK,
 			Status:     "200 OK",
 			Header:     make(http.Header),
-			Body:       io.NopCloser(strings.NewReader(`callback({"error":"ok","challenge":"token"})`)),
+			Body:       io.NopCloser(strings.NewReader(`callback({"error":"ok","challenge":"token","client_ip":"192.168.5.6"})`)),
 		}, nil
 	})}
 
@@ -110,8 +110,11 @@ func TestGetChallengeUsesDiscoveredACID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getChallenge returned error: %v", err)
 	}
-	if got, want := challenge, "token"; got != want {
+	if got, want := challenge.Challenge, "token"; got != want {
 		t.Errorf("challenge = %q, want %q", got, want)
+	}
+	if got, want := challenge.ClientIP, "192.168.5.6"; got != want {
+		t.Errorf("challenge client IP = %q, want %q", got, want)
 	}
 }
 

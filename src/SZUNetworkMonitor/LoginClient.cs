@@ -33,6 +33,13 @@ internal static class LoginClient
         startInfo.ArgumentList.Add("--password-stdin");
         startInfo.ArgumentList.Add("--json");
 
+        var campusRoute = CampusNetworkRoute.TryDiscover();
+        if (campusRoute is not null)
+        {
+            startInfo.Environment["SZU_DIRECT_SOURCE_IP"] = campusRoute.SourceAddress;
+            startInfo.Environment["SZU_DIRECT_DNS_SERVERS"] = string.Join(',', campusRoute.DnsServers);
+        }
+
         using var process = new Process { StartInfo = startInfo };
         if (!process.Start())
         {
@@ -84,6 +91,15 @@ internal static class LoginClient
     internal static string ToUserFacingFailure(LoginResult result)
     {
         var diagnostic = result.Error ?? result.Message;
+        if (diagnostic.Contains("dynamic ac_id", StringComparison.OrdinalIgnoreCase))
+        {
+            return "认证门户未提供当前网络参数";
+        }
+        if (diagnostic.Contains("direct SRun discovery failed", StringComparison.OrdinalIgnoreCase) ||
+            diagnostic.Contains("physical campus adapter", StringComparison.OrdinalIgnoreCase))
+        {
+            return "无法通过校园网物理网卡连接认证服务器";
+        }
         if (diagnostic.Contains("portal discovery failed", StringComparison.OrdinalIgnoreCase))
         {
             return "未发现当前网络的认证门户";
