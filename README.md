@@ -1,4 +1,28 @@
-# SZU Campus Network Monitor
+# 深圳大学校园网自动认证 · SZU Campus Network Monitor
+
+[![Release](https://img.shields.io/github/v/release/charles-webber/szu-network-monitor?display_name=tag&sort=semver)](https://github.com/charles-webber/szu-network-monitor/releases)
+[![Build](https://github.com/charles-webber/szu-network-monitor/actions/workflows/release.yml/badge.svg)](https://github.com/charles-webber/szu-network-monitor/actions/workflows/release.yml)
+[![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0--or--later-blue.svg)](LICENSE)
+
+面向 **深圳大学（SZU）校园网 / SRun** 的 Windows 自动认证与断网重连工具。它常驻系统托盘，在 `SZU_WLAN`、教学区等不同网络环境中动态发现认证门户；当账号被其他设备顶下线、认证失效或网络出现假连通时，自动安全地重新认证。
+
+**English:** A Windows tray app for Shenzhen University (SZU) campus-network SRun auto-login and reconnection. It dynamically discovers captive-portal parameters and supports SZU_WLAN and teaching-area networks without hard-coded AC IPs or `ac_id` values.
+
+## 为什么选择它
+
+- **为真实断网而做：** 账号被顶下线时自动处理，而不是只在 Wi-Fi 断开时工作。
+- **兼容不同校区网络：** 动态读取当前门户的 `ac_id`、`ac-ip/ac_ip`、SSID 与客户端地址，不假设教学区地址。
+- **能绕开代理/TUN Fake-IP：** 探测被代理拦截时，使用物理 WLAN/以太网网卡的 DNS 与源地址直连门户。
+- **不牺牲安全：** 保留 `net.szu.edu.cn` 的 Host、TLS SNI 和证书验证；账号密码不会出现在命令行或日志中。
+- **安静且克制：** 每 60 秒检测一次；单实例、认证串行和失败冷却避免反复登录。
+
+## 快速开始
+
+1. 从 [Releases](../../releases) 下载 `SZUNetworkMonitor-Setup.exe`，或使用 portable ZIP。
+2. 安装后首次启动，输入校园网账号和密码。
+3. 程序会留在 Windows 系统托盘；右键图标可立即检查、修改账号、打开日志或退出。
+
+遇到连接问题，请先看 [常见问题与排障指南](docs/TROUBLESHOOTING.md)。提交 Issue 前，请移除账号、密码、MAC 和完整 IP 地址。
 
 Windows 托盘程序：每分钟检查一次网络；首次 Ping 失败时自动发现当前 SRun 门户并重新认证。
 
@@ -78,6 +102,16 @@ git tag v1.0.4
 git push origin main --tags
 ```
 
-## License and attribution
+## 致谢、贡献者与许可
+
+本项目的每一段可靠性改进都建立在前人工作的基础上，感谢每一位贡献者：
+
+- [charles-webber](https://github.com/charles-webber)：创建了初始的 Windows 托盘程序、安装包和用户文档，使项目能被普通使用者直接安装使用。
+- [reraph-77](https://github.com/reraph-77)：持续改进动态门户发现、断网重连、单实例与认证可靠性。
+- [nnothing1/szu-srun-login](https://github.com/nnothing1/szu-srun-login)：提供本项目使用并修改的 SRun 登录实现基础。
+
+欢迎通过 [Issues](https://github.com/charles-webber/szu-network-monitor/issues) 报告不同 SSID、校区或网络软件组合下的兼容性情况，也欢迎提交文档、测试和代码改进。具体方式见 [贡献指南](CONTRIBUTING.md)。
+
+This project is built on the work of its contributors and the upstream SRun implementation. Contributions, compatibility reports, documentation improvements, and tests are warmly welcome.
 
 The local SRun helper is a modified derivative of [nnothing1/szu-srun-login](https://github.com/nnothing1/szu-srun-login), licensed under AGPL-3.0. This project is distributed under AGPL-3.0-or-later. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
