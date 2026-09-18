@@ -47,7 +47,7 @@ internal sealed class SetupForm : Form
             AutoSize = false,
             Width = 390,
             Height = 42,
-            Text = "\u8f93\u5165\u6821\u56ed\u7f51\u8d26\u53f7\u5bc6\u7801\u540e\uff0c\u7a0b\u5e8f\u4f1a\u6bcf 1 \u5206\u949f\u68c0\u6d4b\u5916\u7f51\u3002\u4efb\u610f Ping \u4e22\u5305\u4f1a\u81ea\u52a8\u91cd\u8fde\u3002",
+            Text = "输入校园网账号密码后，程序会每 1 分钟检测外网。连续 2 次 Ping 失败会自动重连。",
             Margin = new Padding(0, 0, 0, 14)
         };
 

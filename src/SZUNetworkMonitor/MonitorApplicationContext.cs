@@ -10,6 +10,7 @@ internal sealed class MonitorApplicationContext : ApplicationContext
     private const string ApplicationName = "SZU Network Monitor";
     private const int PollIntervalMilliseconds = 60_000;
     private const int MaximumPingCount = 5;
+    private const int ReconnectPingFailureThreshold = 2;
     private readonly SettingsStore _settingsStore = new();
     private readonly NotifyIcon _notifyIcon;
     private readonly ToolStripMenuItem _statusMenuItem;
@@ -115,8 +116,9 @@ internal sealed class MonitorApplicationContext : ApplicationContext
                 return;
             }
 
-            var pingCount = Math.Clamp(settings.PingCount, 1, MaximumPingCount);
+            var pingCount = Math.Clamp(settings.PingCount, ReconnectPingFailureThreshold, MaximumPingCount);
             var successfulPings = 0;
+            var failureTracker = new ConsecutivePingFailureTracker(ReconnectPingFailureThreshold);
             using var pinger = new Ping();
             for (var attempt = 1; attempt <= pingCount; attempt++)
             {
@@ -130,21 +132,34 @@ internal sealed class MonitorApplicationContext : ApplicationContext
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
                     AppLogger.Warning($"Ping {attempt}/{pingCount} failed: {exception.Message}");
-                    await ReconnectAsync(attempt, successfulPings, "Ping request failed.", cancellationToken);
-                    return;
+                    if (failureTracker.RecordFailure())
+                    {
+                        await ReconnectAsync(attempt, successfulPings, "Ping request failed.", cancellationToken);
+                        return;
+                    }
+
+                    AppLogger.Warning("Waiting for a second consecutive ping failure before reconnecting.");
+                    continue;
                 }
 
                 if (reply.Status != IPStatus.Success)
                 {
                     AppLogger.Warning($"Ping {attempt}/{pingCount} failed with {reply.Status}.");
-                    await ReconnectAsync(attempt, successfulPings, reply.Status.ToString(), cancellationToken);
-                    return;
+                    if (failureTracker.RecordFailure())
+                    {
+                        await ReconnectAsync(attempt, successfulPings, reply.Status.ToString(), cancellationToken);
+                        return;
+                    }
+
+                    AppLogger.Warning("Waiting for a second consecutive ping failure before reconnecting.");
+                    continue;
                 }
 
                 successfulPings++;
+                failureTracker.RecordSuccess();
             }
 
-            AppLogger.Info($"Connectivity check passed ({successfulPings}/{pingCount} replies).");
+            AppLogger.Info($"Connectivity check completed ({successfulPings}/{pingCount} replies; no repeated packet loss).");
             UpdateStatus($"网络正常：{successfulPings}/{pingCount}，1 分钟后再次检查", ToolTipIcon.Info);
         }
         catch (OperationCanceledException) when (_shutdownCancellation.IsCancellationRequested)
@@ -188,7 +203,7 @@ internal sealed class MonitorApplicationContext : ApplicationContext
         try
         {
             UpdateStatus("正在重连", ToolTipIcon.Warning);
-            AppLogger.Warning($"Packet loss on ping {failedAttempt}; reconnecting. Reason: {reason}");
+            AppLogger.Warning($"Two consecutive ping failures (latest ping {failedAttempt}); reconnecting. Reason: {reason}");
 
             string password;
             try

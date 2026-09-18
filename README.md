@@ -24,13 +24,13 @@
 
 遇到连接问题，请先看 [常见问题与排障指南](docs/TROUBLESHOOTING.md)。提交 Issue 前，请移除账号、密码、MAC 和完整 IP 地址。
 
-Windows 托盘程序：每分钟检查一次网络；首次 Ping 失败时自动发现当前 SRun 门户并重新认证。
+Windows 托盘程序：每分钟检查一次网络；连续两次 Ping 失败时自动发现当前 SRun 门户并重新认证。
 
 ## 中文说明
 
 1. 从 [Releases](../../releases) 下载并安装 `SZUNetworkMonitor-Setup.exe`。
 2. 首次运行时输入校园网账号和密码。
-3. 程序驻留在系统托盘，每 60 秒检查一次网络；每轮最多 Ping 5 次，第一包失败即进入一次重连流程。
+3. 程序驻留在系统托盘，每 60 秒检查一次网络；每轮最多 Ping 5 次，连续两次失败才进入一次重连流程。单次偶发丢包会继续检测，不会立即认证。
 4. 右键托盘图标可立即检查、修改账号密码、设置开机自启、打开日志或退出。
 
 密码仅保存在本机，并使用当前 Windows 用户的 DPAPI 加密。密码不会出现在命令行、日志或网络状态提示中。
@@ -55,7 +55,7 @@ Windows 托盘程序：每分钟检查一次网络；首次 Ping 失败时自动
 | 状态 | 含义 |
 | --- | --- |
 | `正在检测 1/5` | 正在执行本轮网络检查。 |
-| `正在重连` | 首个 Ping 失败，准备认证。 |
+| `正在重连` | 连续两次 Ping 失败，准备认证。 |
 | `正在发现门户` | 正在读取 captive portal 的重定向参数。 |
 | `重连成功` | SRun 认证已完成。 |
 | `重连失败：…` | 显示已脱敏的可读原因；可从托盘菜单打开日志进一步查看。 |
@@ -98,7 +98,7 @@ The build creates `artifacts\publish\` and, when Inno Setup is available, `artif
 GitHub Actions builds and publishes the installer and portable zip for a version tag.
 
 ```powershell
-git tag v1.0.4
+git tag v1.0.5
 git push origin main --tags
 ```
 
